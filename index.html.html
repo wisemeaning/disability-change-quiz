@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>편견의 방을 탈출하라!</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden;transition:background 1.5s,color 1.5s}
+body.dark{background:#060610;color:#c0b8d8}
+body.bright{background:#fffbe8;color:#3a2e1a}
+.screen{display:none;min-height:100vh;padding:24px 16px;flex-direction:column;align-items:center;justify-content:center}
+.screen.active{display:flex}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.4}95%{opacity:1}97%{opacity:.6}98%{opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fogmove{0%{transform:translateX(-10%)}100%{transform:translateX(10%)}}
+@keyframes burst{0%{opacity:0;transform:scale(.5)}60%{opacity:1;transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.fog{pointer-events:none;position:fixed;inset:0;z-index:0;opacity:.18;background:radial-gradient(ellipse 200% 80% at 50% 110%,#4a1d8a,transparent);animation:fogmove 8s ease-in-out infinite alternate}
+/* TITLE */
+#titleScreen{position:relative;text-align:center}
+.title-lock{font-size:80px;animation:float 3s ease-in-out infinite,flicker 6s infinite;filter:drop-shadow(0 0 16px #7c3aed88)}
+.crack-line{width:2px;height:60px;background:linear-gradient(to bottom,#7c3aed,transparent);margin:0 auto 8px;animation:pulse 2s infinite}
+.title-main{font-size:28px;font-weight:700;color:#a78bfa;text-shadow:0 0 12px #7c3aed88;margin-bottom:6px;letter-spacing:1px}
+.title-sub{font-size:15px;color:#665e88;margin-bottom:36px}
+.input-group{width:100%;max-width:360px;margin-bottom:14px}
+.input-group label{display:block;font-size:17px;color:#b0a8d8;margin-bottom:7px;letter-spacing:.5px}
+.input-group input{width:100%;padding:14px 18px;background:#0e0c1e;border:1px solid #2e2a52;border-radius:8px;color:#e0d8ff;font-size:20px;outline:none;transition:border .2s}
+.input-group input:focus{border-color:#7c3aed;box-shadow:0 0 8px #7c3aed44}
+.btn-start{width:100%;max-width:360px;padding:14px;background:transparent;border:1px solid #7c3aed;border-radius:8px;color:#a78bfa;font-size:17px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .2s;text-shadow:0 0 8px #7c3aed88}
+.btn-start:hover{background:#7c3aed22;box-shadow:0 0 20px #7c3aed44}
+.tape{background:repeating-linear-gradient(45deg,#1a1428 0,#1a1428 10px,#0e0c1e 10px,#0e0c1e 20px);height:8px;width:100%;max-width:360px;margin:20px 0 0;border-radius:4px;opacity:.4}
+/* ROOM INTRO */
+#roomIntroScreen{text-align:center;position:relative}
+.spiderweb{position:absolute;top:10px;left:10px;font-size:50px;opacity:.15;transform:rotate(-20deg)}
+.spiderweb2{position:absolute;top:10px;right:10px;font-size:50px;opacity:.15;transform:scaleX(-1) rotate(-20deg)}
+.room-door{font-size:72px;animation:float 3s ease-in-out infinite;filter:drop-shadow(0 0 20px #7c3aed66)}
+.room-title{font-size:22px;font-weight:700;color:#a78bfa;margin:12px 0 6px;text-shadow:0 0 8px #7c3aed66}
+.room-desc{font-size:14px;color:#665e88;margin-bottom:6px;max-width:360px;text-align:center}
+.room-hint{font-size:13px;color:#4a4268;margin-bottom:36px;max-width:360px;text-align:center;font-style:italic}
+.btn-enter{padding:12px 36px;background:transparent;border:1px solid #7c3aed;border-radius:8px;color:#a78bfa;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .2s}
+.btn-enter:hover{background:#7c3aed22;box-shadow:0 0 16px #7c3aed44}
+.skull-row{display:flex;gap:8px;margin-bottom:20px;opacity:.25;font-size:20px}
+/* QUIZ */
+#quizScreen{background:transparent;padding:16px;align-items:stretch;justify-content:flex-start}
+.quiz-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;max-width:700px;width:100%;margin-left:auto;margin-right:auto}
+.quiz-room-badge{background:#0e0c1e;border:1px solid #2e2a52;border-radius:20px;padding:4px 14px;font-size:13px;color:#7c6faa}
+.quiz-progress{font-size:13px;color:#4a4268}
+.timer-bar-wrap{max-width:700px;width:100%;margin:0 auto 18px}
+.timer-bar-bg{background:#0e0c1e;border-radius:4px;height:6px;overflow:hidden;border:1px solid #1e1a38}
+.timer-bar{height:100%;border-radius:4px;transition:width 1s linear}
+.timer-text{font-size:13px;color:#4a4268;text-align:right;margin-top:4px}
+.question-box{max-width:700px;width:100%;margin:0 auto 16px;background:#0a0818;border:1px solid #2e2a52;border-radius:12px;padding:24px;position:relative;overflow:hidden}
+.question-box::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,#ffffff04 3px,#ffffff04 4px);pointer-events:none}
+.question-num{font-size:12px;color:#4a4268;margin-bottom:8px;letter-spacing:.5px}
+.question-text{font-size:20px;font-weight:500;line-height:1.75;color:#e0d8ff}
+.options-grid{max-width:700px;width:100%;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.option-btn{padding:16px 18px;background:#0a0818;border:1px solid #2e2a52;border-radius:10px;color:#c0b8e8;font-size:17px;cursor:pointer;text-align:left;line-height:1.5;transition:all .15s}
+.option-btn:hover:not(:disabled){background:#16122e;border-color:#7c3aed;color:#c0b8d8}
+.option-btn.correct{background:#071a10;border-color:#22c55e;color:#86efac;box-shadow:0 0 12px #22c55e33}
+.option-btn.wrong{background:#1a0707;border-color:#ef4444;color:#fca5a5;animation:shake .3s}
+.option-btn:disabled{cursor:default}
+.short-answer-area{max-width:700px;width:100%;margin:0 auto}
+.short-answer-area input{width:100%;padding:13px 16px;background:#0a0818;border:1px solid #2e2a52;border-radius:8px;color:#c0b8d8;font-size:17px;outline:none;margin-bottom:10px}
+.short-answer-area input:focus{border-color:#7c3aed}
+.btn-submit{padding:11px 28px;background:transparent;border:1px solid #7c3aed;border-radius:8px;color:#a78bfa;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-submit:hover{background:#7c3aed22}
+.feedback-box{max-width:700px;width:100%;margin:14px auto 0;padding:14px 18px;border-radius:10px;font-size:15px;line-height:1.7}
+.feedback-box.correct-fb{background:#071a10;border:1px solid #22c55e44;color:#86efac}
+.feedback-box.wrong-fb{background:#1a0707;border:1px solid #ef444444;color:#fca5a5}
+.btn-next{max-width:700px;width:100%;margin:10px auto 0;padding:12px;background:transparent;border:1px solid #2e2a52;border-radius:8px;color:#665e88;font-size:15px;font-weight:700;cursor:pointer;display:none;transition:all .2s}
+.btn-next:hover{border-color:#7c3aed;color:#a78bfa}
+/* ROOM CLEAR */
+#roomClearScreen{text-align:center}
+.clear-icon{font-size:72px;margin-bottom:16px;animation:burst .6s ease-out}
+.clear-title{font-size:22px;font-weight:700;color:#22c55e;text-shadow:0 0 12px #22c55e66;margin-bottom:8px}
+.clear-score{font-size:14px;color:#665e88;margin-bottom:6px}
+.clear-password{font-size:14px;color:#a78bfa;margin-bottom:36px;padding:10px 20px;background:#0e0c1e;border:1px solid #2e2a52;border-radius:8px;display:inline-block}
+.btn-continue{padding:12px 36px;background:transparent;border:1px solid #22c55e;border-radius:8px;color:#22c55e;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-continue:hover{background:#22c55e22;box-shadow:0 0 16px #22c55e44}
+/* BONUS */
+#bonusScreen{text-align:center;padding:30px 16px}
+.bonus-halo{font-size:52px;margin-bottom:14px;animation:float 3s ease-in-out infinite}
+.bonus-title{font-size:22px;font-weight:700;color:#fbbf24;text-shadow:0 0 10px #fbbf2466;margin-bottom:6px}
+.bonus-desc{font-size:14px;color:#665e88;margin-bottom:4px}
+.bonus-word{font-size:38px;font-weight:700;color:#a78bfa;text-shadow:0 0 16px #7c3aed88;margin:18px 0}
+.bonus-input-area{width:100%;max-width:500px;text-align:left}
+.acrostic-line{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.acrostic-char{font-size:24px;font-weight:700;color:#a78bfa;min-width:32px;text-shadow:0 0 8px #7c3aed88}
+.acrostic-input{flex:1;padding:11px 14px;background:#0a0818;border:1px solid #2e2a52;border-radius:8px;color:#c0b8d8;font-size:16px;outline:none;transition:border .2s}
+.acrostic-input:focus{border-color:#a78bfa}
+.acrostic-input.banned{border-color:#ef4444;animation:shake .3s}
+.ban-msg{font-size:13px;color:#ef4444;margin-top:6px;display:none}
+.btn-bonus-submit{width:100%;max-width:500px;margin-top:16px;padding:14px;background:transparent;border:1px solid #d97706;border-radius:8px;color:#fbbf24;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-bonus-submit:hover{background:#d9770622;box-shadow:0 0 16px #d9770644}
+/* FINAL */
+#finalScreen{text-align:center;padding:30px 16px;position:relative}
+.final-icon{font-size:80px;margin-bottom:18px;animation:burst .6s ease-out}
+.final-title{font-size:26px;font-weight:700;margin-bottom:10px}
+.final-score-big{font-size:48px;font-weight:700;margin-bottom:8px}
+.final-sub{font-size:14px;margin-bottom:28px;max-width:440px;text-align:center;line-height:1.8}
+.leaderboard{width:100%;max-width:400px;background:#0a0818;border:1px solid #2e2a52;border-radius:12px;padding:18px;margin-bottom:28px}
+.lb-title{font-size:14px;color:#7c6faa;margin-bottom:12px;font-weight:500}
+.lb-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1e1a38;font-size:14px}
+.lb-row:last-child{border-bottom:none}
+.lb-rank{font-size:18px;min-width:28px}
+.lb-name{flex:1;color:#c0b8d8}
+.lb-score{color:#a78bfa;font-weight:500}
+.lb-empty{font-size:13px;color:#555}
+.btn-restart{padding:12px 36px;background:transparent;border:1px solid #3d3d6b;border-radius:8px;color:#665e88;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-restart:hover{border-color:#7c3aed;color:#a78bfa}
+/* bright override */
+body.bright .leaderboard{background:#fffdf0;border-color:#fde68a}
+body.bright .lb-row{border-color:#fde68a44}
+body.bright .lb-name{color:#3a2e1a}
+body.bright .lb-score{color:#b45309}
+body.bright .lb-title{color:#92400e}
+body.bright .question-box{background:#fff8e7;border-color:#fde68a}
+body.bright .question-text{color:#3a2e1a}
+/* STATUS */
+.sync-badge{position:fixed;top:10px;right:10px;font-size:11px;padding:3px 10px;border-radius:12px;z-index:998;opacity:.7}
+.sync-badge.ok{background:#071a10;color:#22c55e;border:1px solid #22c55e44}
+.sync-badge.err{background:#1a0707;color:#fca5a5;border:1px solid #ef444444}
+/* TEACHER */
+#teacherBtn{position:fixed;bottom:10px;right:10px;width:30px;height:30px;background:transparent;border:1px solid #2e2a52;border-radius:6px;color:#2e2a52;font-size:11px;cursor:pointer;z-index:999}
+#teacherModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:1000;align-items:center;justify-content:center}
+#teacherModal.open{display:flex}
+.teacher-panel{background:#0a0818;border:1px solid #2e2a52;border-radius:12px;padding:22px;width:92%;max-width:700px;max-height:85vh;overflow-y:auto}
+.tp-title{font-size:16px;font-weight:700;color:#a78bfa;margin-bottom:14px}
+.tp-section{margin-bottom:18px}
+.tp-section h3{font-size:13px;color:#665e88;margin-bottom:7px}
+.tp-table{width:100%;border-collapse:collapse;font-size:13px}
+.tp-table th,.tp-table td{padding:6px 10px;border:1px solid #1e1a38;text-align:left}
+.tp-table th{color:#665e88;background:#0e0c1e}
+.tp-table td{color:#c0b8d8}
+.tp-btn-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.tp-copy-btn{padding:5px 14px;background:transparent;border:1px solid #7c3aed;border-radius:6px;color:#a78bfa;font-size:12px;cursor:pointer}
+.tp-reset-btn{padding:5px 14px;background:transparent;border:1px solid #ef4444;border-radius:6px;color:#fca5a5;font-size:12px;cursor:pointer}
+.tp-close{padding:7px 22px;background:transparent;border:1px solid #2e2a52;border-radius:6px;color:#665e88;font-size:13px;cursor:pointer;margin-top:14px}
+.tp-pw-wrap{text-align:center}
+.tp-pw-wrap input{padding:10px 14px;background:#0e0c1e;border:1px solid #2e2a52;border-radius:8px;color:#c0b8d8;font-size:14px;outline:none;width:190px}
+.tp-pw-btn{padding:10px 18px;background:transparent;border:1px solid #7c3aed;border-radius:8px;color:#a78bfa;font-size:13px;cursor:pointer;margin-left:6px}
+.error-msg{color:#ef4444;font-size:12px;margin-top:8px}
+</style>
+</head>
+<body class="dark">
+<div class="fog"></div>
+<div class="sync-badge ok" id="syncBadge">🔗 연결됨</div>
+
+<!-- TITLE -->
+<div id="titleScreen" class="screen active">
+  <div class="title-lock">🔐</div>
+  <div class="crack-line"></div>
+  <div class="title-main">편견의 방을 탈출하라!</div>
+  <div class="title-sub">장애인식개선교육 방탈출 퀴즈 · 3개의 방 + 보너스 미션</div>
+  <div class="input-group"><label>학번</label><input id="inputId" type="text" placeholder="학번을 입력하세요"></div>
+  <div class="input-group"><label>이름</label><input id="inputName" type="text" placeholder="이름을 입력하세요"></div>
+  <button class="btn-start" onclick="startGame()">🚪 탈출 시작</button>
+  <div class="tape"></div>
+</div>
+
+<!-- ROOM INTRO -->
+<div id="roomIntroScreen" class="screen">
+  <span class="spiderweb">🕸</span><span class="spiderweb2">🕸</span>
+  <div class="skull-row"><span>💀</span><span>🕯</span><span>💀</span><span>🕯</span><span>💀</span></div>
+  <div class="room-door" id="roomEmoji"></div>
+  <div class="room-title" id="roomTitleText"></div>
+  <div class="room-desc" id="roomDescText"></div>
+  <div class="room-hint" id="roomHintText"></div>
+  <button class="btn-enter" onclick="enterRoom()">🔑 방 입장</button>
+</div>
+
+<!-- QUIZ -->
+<div id="quizScreen" class="screen">
+  <div class="quiz-header">
+    <span class="quiz-room-badge" id="quizRoomBadge"></span>
+    <span class="quiz-progress" id="quizProgress"></span>
+  </div>
+  <div class="timer-bar-wrap">
+    <div class="timer-bar-bg"><div class="timer-bar" id="timerBar"></div></div>
+    <div class="timer-text" id="timerText">30초</div>
+  </div>
+  <div class="question-box">
+    <div class="question-num" id="questionNum"></div>
+    <div class="question-text" id="questionText"></div>
+  </div>
+  <div class="options-grid" id="optionsGrid"></div>
+  <div class="short-answer-area" id="shortAnswerArea" style="display:none">
+    <input type="text" id="shortInput" placeholder="정답을 입력하세요">
+    <button class="btn-submit" onclick="submitShort()">제출</button>
+  </div>
+  <div class="feedback-box" id="feedbackBox" style="display:none"></div>
+  <button class="btn-next" id="btnNext" onclick="nextQuestion()">다음 문제 →</button>
+</div>
+
+<!-- ROOM CLEAR -->
+<div id="roomClearScreen" class="screen">
+  <div class="clear-icon" id="clearIcon"></div>
+  <div class="clear-title" id="clearTitle"></div>
+  <div class="clear-score" id="clearScore"></div>
+  <div class="clear-password" id="clearPassword"></div>
+  <button class="btn-continue" onclick="nextRoom()">다음 방으로 →</button>
+</div>
+
+<!-- BONUS -->
+<div id="bonusScreen" class="screen">
+  <div class="bonus-halo">✨</div>
+  <div class="bonus-title">보너스 미션!</div>
+  <div class="bonus-desc">추가 상품을 위한 특별 미션이에요</div>
+  <div class="bonus-desc">아래 단어로 <strong>2행시</strong>를 지어보세요!</div>
+  <div class="bonus-word" id="bonusWordDisplay"></div>
+  <div class="bonus-input-area" id="bonusInputArea"></div>
+  <div class="ban-msg" id="banMsg">⛔ 부적절한 표현이 포함되어 있어요. 다시 작성해주세요!</div>
+  <button class="btn-bonus-submit" onclick="submitBonus()">✨ 2행시 제출</button>
+</div>
+
+<!-- FINAL -->
+<div id="finalScreen" class="screen">
+  <div class="final-icon" id="finalIcon"></div>
+  <div class="final-title" id="finalTitle"></div>
+  <div class="final-score-big" id="finalScoreBig"></div>
+  <div class="final-sub" id="finalSub"></div>
+  <div class="leaderboard">
+    <div class="lb-title">🏆 TOP 3 리더보드</div>
+    <div id="lbContent"></div>
+  </div>
+  <button class="btn-restart" onclick="restartGame()">🔄 다시 도전</button>
+</div>
+
+<!-- TEACHER -->
+<button id="teacherBtn" onclick="openTeacher()">👁</button>
+<div id="teacherModal">
+  <div class="teacher-panel">
+    <div id="teacherAuthArea" class="tp-pw-wrap">
+      <div class="tp-title">교사 전용 패널</div>
+      <div style="font-size:13px;color:#665e88;margin-bottom:14px">비밀번호를 입력하세요</div>
+      <input type="password" id="tpPwInput" placeholder="비밀번호">
+      <button class="tp-pw-btn" onclick="checkTeacherPw()">확인</button>
+      <div class="error-msg" id="tpPwError"></div>
+      <br><br>
+      <button class="tp-close" onclick="closeTeacher()">닫기</button>
+    </div>
+    <div id="teacherDataArea" style="display:none">
+      <div class="tp-title">🎓 교사 전용 패널</div>
+      <div class="tp-section">
+        <h3>참여자 현황</h3>
+        <table class="tp-table"><thead><tr><th>학번</th><th>이름</th><th>점수</th><th>정답수</th><th>완료시각</th></tr></thead><tbody id="tpStudentBody"></tbody></table>
+        <div class="tp-btn-row">
+          <button class="tp-copy-btn" onclick="copyStudents()">📋 복사</button>
+          <button class="tp-reset-btn" onclick="resetAll()">🗑 전체 초기화</button>
+        </div>
+      </div>
+      <div class="tp-section">
+        <h3>2행시 응모 현황</h3>
+        <table class="tp-table"><thead><tr><th>학번</th><th>이름</th><th>단어</th><th>1행</th><th>2행</th></tr></thead><tbody id="tpBonusBody"></tbody></table>
+        <div class="tp-btn-row"><button class="tp-copy-btn" onclick="copyBonus()">📋 복사</button></div>
+      </div>
+      <button class="tp-close" onclick="closeTeacher()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+const FB = 'https://realtime-database-94b88-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+const TEACHER_PW = '1209';
+const BONUS_WORDS = ['장애','이해','공감','배려'];
+const BAD_WORDS = ['시발','씨발','개새끼','병신','지랄','미친','fuck','shit','bitch','개년','쌍년','새끼','ㅅㅂ','ㅄ','ㅂㅅ','ㄱㅅㄲ','씨팔','씨빨','개같','닥쳐','꺼져','죽어'];
+
+const ROOMS = [
+  {emoji:'🚪', name:'1번 방 · 인식의 방', cat:'장애 인식',
+   desc:'장애에 대한 기본 개념과 올바른 인식을 확인하는 방이에요.',
+   hint:'어둠 속에서 올바른 인식의 빛을 찾아 자물쇠를 여세요.', password:'차별',
+   questions:[
+    {type:'mc', text:'장애에 대한 설명으로 가장 적절한 것은?',
+     options:['장애는 개인의 노력 부족 때문에 생긴다.','장애는 의학적 문제이므로 치료만이 중요하다.','장애는 개인의 특성과 사회적 환경이 함께 영향을 미친다.','장애인은 모두 같은 어려움을 경험한다.'],
+     answer:2, feedback:'장애는 단순히 의학적 문제가 아니라, 개인의 특성과 사회적 환경(물리적 장벽, 제도적 지원 등)이 함께 상호작용한 결과로 이해해야 합니다. 이를 장애의 사회적 모델이라고 합니다.'},
+    {type:'mc', text:'다음 중 장애인에 대한 올바른 표현은?',
+     options:['장애자','장애우','장애인','불구자'],
+     answer:2, feedback:'"장애인"이 법적으로 올바른 표현입니다. "장애우"는 친근감을 담으려 했으나 장애인 당사자들이 평등하지 않다고 느낄 수 있어 권장되지 않습니다.'},
+    {type:'mc', text:'「장애인차별금지 및 권리구제 등에 관한 법률」의 목적과 가장 관련 있는 것은?',
+     options:['장애인의 격리 교육 확대','장애인의 권리 보호와 차별 해소','장애인의 취업 제한','장애 등급 강화'],
+     answer:1, feedback:'장애인차별금지법(2008년 시행)은 장애인에 대한 모든 형태의 차별을 금지하고, 장애인의 완전한 사회참여와 평등권 실현을 목적으로 합니다.'},
+    {type:'mc', text:'장애에 대한 생각으로 가장 바람직한 것은?',
+     options:['장애인은 항상 도움이 필요하다.','장애인은 스스로 결정하기 어렵다.','장애인의 의견을 존중하고 필요한 지원을 제공한다.','장애인은 위험하므로 특별히 관리해야 한다.'],
+     answer:2, feedback:'장애인도 스스로 결정할 권리(자기결정권)가 있습니다. 당사자의 의견을 먼저 묻고 필요한 지원을 제공하는 것이 올바른 태도입니다.'},
+    {type:'short', text:'장애를 이유로 교육, 취업, 시설 이용 등에서 불리하게 대우하는 것을 무엇이라고 할까요?',
+     answers:['차별'], feedback:'정답은 "차별"입니다. 장애를 이유로 한 불합리한 대우는 법적으로도 금지되어 있으며, 누구나 차별 없이 동등한 기회를 가져야 합니다.'}
+   ]},
+  {emoji:'🕯', name:'2번 방 · 공감의 방', cat:'장애 공감',
+   desc:'장애 당사자의 관점에서 생각하고 공감하는 방이에요.',
+   hint:'촛불 하나가 꺼지지 않도록, 상대의 마음 속으로 들어가 보세요.', password:'공감',
+   questions:[
+    {type:'mc', text:'휠체어를 사용하는 학생이 계단 앞에서 이동에 어려움을 겪고 있다. 가장 적절한 행동은?',
+     options:['모른 척 지나간다.','허락 없이 휠체어를 밀어준다.','도움이 필요한지 먼저 물어본다.','친구를 불러 대신 도와주게 한다.'],
+     answer:2, feedback:'도움을 줄 때는 반드시 먼저 묻는 것이 중요합니다. "도움이 필요하신가요?"라고 먼저 묻는 것이 기본 예의입니다.'},
+    {type:'mc', text:'청각장애 학생과 대화할 때 적절한 방법은?',
+     options:['뒤에서 큰 소리로 부른다.','입을 가리고 말한다.','학생을 바라보며 천천히 말한다.','대화를 포기한다.'],
+     answer:2, feedback:'청각장애인과 대화할 때는 눈을 마주치고, 정면에서 또렷하게 말하는 것이 중요합니다. 많은 청각장애인이 입 모양을 읽기도 합니다.'},
+    {type:'mc', text:'다음 중 장애 학생이 가장 듣고 싶어 할 말은?',
+     options:['"넌 장애가 있어서 힘들겠다."','"도움이 필요하면 말해줘."','"그래도 생각보다 잘하네."','"특별대우 받아서 좋겠다."'],
+     answer:1, feedback:'"도움이 필요하면 말해줘"는 당사자의 자율성을 존중하는 표현입니다. 장애인이 원하는 것은 동정이나 과도한 칭찬이 아닌 동등한 지지입니다.'},
+    {type:'mc', text:'시각장애 학생이 복도를 이동하고 있다. 가장 적절한 행동은?',
+     options:['갑자기 팔을 잡아 끈다.','앞을 가로막는다.','필요한 도움이 있는지 먼저 묻는다.','큰 소리로 지시한다.'],
+     answer:2, feedback:'시각장애인을 도울 때도 먼저 묻는 것이 원칙입니다. 안내가 필요하다면 팔꿈치 위를 가볍게 잡도록 유도하고, 항상 상대방이 주도권을 갖도록 해야 합니다.'},
+    {type:'short', text:'장애가 있는 사람의 입장에서 생각하고 감정을 이해하려는 태도를 무엇이라고 할까요?',
+     answers:['공감'], feedback:'정답은 "공감"입니다. 공감은 동정과 달리, 상대방의 상황과 감정을 그 사람의 입장에서 이해하려는 적극적인 태도를 말합니다.'}
+   ]},
+  {emoji:'⛓', name:'3번 방 · 함께의 방', cat:'통합교육',
+   desc:'장애 학생과 비장애 학생이 함께 배우는 통합교육에 관한 방이에요.',
+   hint:'마지막 사슬을 끊어내세요. 함께라는 열쇠가 모든 문을 엽니다.', password:'통합교육',
+   questions:[
+    {type:'mc', text:'통합교육의 의미로 가장 적절한 것은?',
+     options:['장애 학생만 따로 교육하는 것','장애 학생이 일반 학생과 함께 배우고 성장하는 것','장애 학생의 학습을 포기하는 것','일반 학생만을 위한 교육'],
+     answer:1, feedback:'통합교육(Inclusive Education)이란 장애 여부와 관계없이 모든 학생이 일반 교육 환경에서 함께 배우며 성장하는 교육입니다.'},
+    {type:'mc', text:'통합학급에서 장애 학생을 대하는 태도로 가장 적절한 것은?',
+     options:['무조건 대신 해준다.','불편하니 어울리지 않는다.','친구로 존중하며 함께 활동한다.','특별한 경우에만 대화한다.'],
+     answer:2, feedback:'장애 학생을 특별 대우하거나 과잉보호하기보다, 자연스럽게 친구로 대하며 함께 활동하는 것이 바람직합니다.'},
+    {type:'mc', text:'다음 중 통합교육의 장점으로 가장 적절한 것은?',
+     options:['학생 간 차이를 숨길 수 있다.','서로를 이해하고 존중하는 기회를 제공한다.','장애 학생의 참여를 줄인다.','친구 관계를 제한한다.'],
+     answer:1, feedback:'통합교육은 장애 학생에게는 다양한 사회적 경험을, 비장애 학생에게는 다양성을 이해하고 배려하는 능력을 키우는 기회를 제공합니다.'},
+    {type:'mc', text:'장애 학생이 수업 참여에 어려움을 보일 때 가장 적절한 방법은?',
+     options:['참여를 포기하게 한다.','혼자 해결하도록 둔다.','필요한 지원을 제공해 함께 참여하도록 돕는다.','교실 밖으로 보낸다.'],
+     answer:2, feedback:'통합교육의 핵심은 "적절한 지원을 통한 완전한 참여"입니다. 개별 필요에 맞는 지원을 제공하여 함께 참여하도록 돕는 것이 중요합니다.'},
+    {type:'short', text:'장애 학생과 비장애 학생이 함께 배우며 성장하는 교육을 무엇이라고 할까요?',
+     answers:['통합교육'], feedback:'정답은 "통합교육"입니다. 통합교육은 모든 학생이 차별 없이 함께 배울 권리가 있다는 가치 위에 세워진 교육 철학입니다.'}
+   ]}
+];
+
+// ── Firebase REST helpers ──────────────────────────────
+async function fbGet(path) {
+  try {
+    const r = await fetch(`${FB}/${path}.json`);
+    if (!r.ok) throw new Error();
+    return await r.json();
+  } catch { setSyncErr(); return null; }
+}
+async function fbPush(path, data) {
+  try {
+    const r = await fetch(`${FB}/${path}.json`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    if (!r.ok) throw new Error();
+    setSyncOk();
+    return await r.json();
+  } catch { setSyncErr(); return null; }
+}
+async function fbDelete(path) {
+  try {
+    await fetch(`${FB}/${path}.json`, {method:'DELETE'});
+    setSyncOk();
+  } catch { setSyncErr(); }
+}
+function setSyncOk(){ const b=document.getElementById('syncBadge'); b.textContent='🔗 연결됨'; b.className='sync-badge ok'; }
+function setSyncErr(){ const b=document.getElementById('syncBadge'); b.textContent='⚠ 오프라인'; b.className='sync-badge err'; }
+
+// ── State ──────────────────────────────────────────────
+let state = {studentId:'',name:'',roomIdx:0,qIdx:0,correctCount:0,totalCorrect:0,timerInterval:null,timerLeft:30,bonusWord:'',bonusLines:[],finished:false};
+
+// ── Helpers ────────────────────────────────────────────
+function hasBadWord(t){ const s=t.toLowerCase().replace(/\s/g,''); return BAD_WORDS.some(w=>s.includes(w.toLowerCase())); }
+function setTheme(bright){
+  document.body.classList.toggle('bright',bright);
+  document.body.classList.toggle('dark',!bright);
+  document.querySelector('.fog').style.display = bright?'none':'block';
+}
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+// ── Game flow ──────────────────────────────────────────
+window.startGame = function(){
+  const sid=document.getElementById('inputId').value.trim();
+  const sname=document.getElementById('inputName').value.trim();
+  if(!sid||!sname){alert('학번과 이름을 모두 입력해주세요.');return;}
+  state={studentId:sid,name:sname,roomIdx:0,qIdx:0,correctCount:0,totalCorrect:0,timerInterval:null,timerLeft:30,bonusWord:'',bonusLines:[],finished:false};
+  setTheme(false); showRoomIntro();
+};
+
+function showRoomIntro(){
+  const r=ROOMS[state.roomIdx];
+  document.getElementById('roomEmoji').textContent=r.emoji;
+  document.getElementById('roomTitleText').textContent=r.name;
+  document.getElementById('roomDescText').textContent=r.desc;
+  document.getElementById('roomHintText').textContent='🕯 '+r.hint;
+  showScreen('roomIntroScreen');
+}
+window.enterRoom = function(){ state.qIdx=0; state.correctCount=0; showQuestion(); };
+
+function showQuestion(){
+  const room=ROOMS[state.roomIdx], q=room.questions[state.qIdx];
+  document.getElementById('quizRoomBadge').textContent=room.name;
+  document.getElementById('quizProgress').textContent=`${state.qIdx+1} / ${room.questions.length}`;
+  document.getElementById('questionNum').textContent=`Q${state.qIdx+1}`;
+  document.getElementById('questionText').textContent=q.text;
+  document.getElementById('feedbackBox').style.display='none';
+  document.getElementById('btnNext').style.display='none';
+  const grid=document.getElementById('optionsGrid'), sa=document.getElementById('shortAnswerArea');
+  if(q.type==='mc'){
+    grid.style.display='grid'; sa.style.display='none'; grid.innerHTML='';
+    q.options.forEach((opt,i)=>{
+      const btn=document.createElement('button');
+      btn.className='option-btn';
+      btn.textContent=['①','②','③','④'][i]+' '+opt;
+      btn.onclick=()=>selectOption(i);
+      grid.appendChild(btn);
+    });
+  } else {
+    grid.style.display='none'; sa.style.display='block';
+    document.getElementById('shortInput').value='';
+    document.getElementById('shortInput').disabled=false;
+    document.querySelector('.btn-submit').disabled=false;
+  }
+  startTimer(); showScreen('quizScreen');
+}
+
+function startTimer(){
+  clearInterval(state.timerInterval); state.timerLeft=30; updateTimerUI();
+  state.timerInterval=setInterval(()=>{ state.timerLeft--; updateTimerUI(); if(state.timerLeft<=0){clearInterval(state.timerInterval);timeOut();} },1000);
+}
+function updateTimerUI(){
+  const pct=(state.timerLeft/30)*100;
+  const bar=document.getElementById('timerBar');
+  bar.style.width=pct+'%';
+  bar.style.background=state.timerLeft<=10?'#ef4444':state.timerLeft<=20?'#f59e0b':'#7c3aed';
+  document.getElementById('timerText').textContent=`${state.timerLeft}초`;
+}
+function timeOut(){
+  disableOptions();
+  showFeedback(false,'⏰ 시간 초과! '+ROOMS[state.roomIdx].questions[state.qIdx].feedback);
+  document.getElementById('btnNext').style.display='block';
+}
+function selectOption(idx){
+  clearInterval(state.timerInterval);
+  const q=ROOMS[state.roomIdx].questions[state.qIdx];
+  disableOptions();
+  const btns=document.querySelectorAll('.option-btn');
+  const correct=idx===q.answer;
+  btns[idx].classList.add(correct?'correct':'wrong');
+  if(!correct) btns[q.answer].classList.add('correct');
+  if(correct) state.correctCount++;
+  showFeedback(correct,(correct?'✅ 정답! ':'❌ 오답! ')+q.feedback);
+  document.getElementById('btnNext').style.display='block';
+}
+window.submitShort = function(){
+  clearInterval(state.timerInterval);
+  const q=ROOMS[state.roomIdx].questions[state.qIdx];
+  const val=document.getElementById('shortInput').value.trim();
+  const correct=q.answers.some(a=>val===a||val.replace(/\s/g,'')===a.replace(/\s/g,''));
+  if(correct) state.correctCount++;
+  document.getElementById('shortInput').disabled=true;
+  document.querySelector('.btn-submit').disabled=true;
+  showFeedback(correct,(correct?'✅ 정답! ':`❌ 오답! 정답은 "${q.answers[0]}"입니다. `)+q.feedback);
+  document.getElementById('btnNext').style.display='block';
+};
+function disableOptions(){ document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true); }
+function showFeedback(correct,msg){
+  const fb=document.getElementById('feedbackBox');
+  fb.className='feedback-box '+(correct?'correct-fb':'wrong-fb');
+  fb.textContent=msg; fb.style.display='block';
+}
+window.nextQuestion = function(){
+  state.qIdx++;
+  if(state.qIdx>=ROOMS[state.roomIdx].questions.length) showRoomClear();
+  else showQuestion();
+};
+
+function showRoomClear(){
+  const room=ROOMS[state.roomIdx];
+  const pct=Math.round((state.correctCount/room.questions.length)*100);
+  state.totalCorrect+=state.correctCount;
+  document.getElementById('clearIcon').textContent=state.correctCount>=4?'🔓':'🗝';
+  document.getElementById('clearTitle').textContent=room.name+' 탈출!';
+  document.getElementById('clearScore').textContent=`이 방 정답률: ${state.correctCount}/${room.questions.length} (${pct}%)`;
+  document.getElementById('clearPassword').textContent=`🔑 획득한 열쇠 단어: "${room.password}"`;
+  showScreen('roomClearScreen');
+}
+window.nextRoom = function(){
+  state.roomIdx++;
+  if(state.roomIdx>=ROOMS.length){ setTheme(true); showBonus(); }
+  else showRoomIntro();
+};
+
+function showBonus(){
+  state.bonusWord=BONUS_WORDS[Math.floor(Math.random()*BONUS_WORDS.length)];
+  const chars=state.bonusWord.split('');
+  document.getElementById('bonusWordDisplay').textContent=state.bonusWord;
+  const area=document.getElementById('bonusInputArea'); area.innerHTML='';
+  chars.forEach((c,i)=>{
+    const div=document.createElement('div'); div.className='acrostic-line';
+    div.innerHTML=`<span class="acrostic-char">${c}</span><input class="acrostic-input" id="acro_${i}" placeholder="${c}(으)로 시작하는 문장을 써주세요">`;
+    area.appendChild(div);
+  });
+  document.getElementById('banMsg').style.display='none';
+  showScreen('bonusScreen');
+}
+window.submitBonus = async function(){
+  const chars=state.bonusWord.split('');
+  const lines=chars.map((_,i)=>document.getElementById(`acro_${i}`).value.trim());
+  if(lines.some(l=>!l)){alert('모든 행을 입력해주세요!');return;}
+  let hasBan=false;
+  chars.forEach((_,i)=>{
+    const inp=document.getElementById(`acro_${i}`);
+    if(hasBadWord(lines[i])){inp.classList.add('banned');hasBan=true;}
+    else inp.classList.remove('banned');
+  });
+  if(hasBan){document.getElementById('banMsg').style.display='block';return;}
+  document.getElementById('banMsg').style.display='none';
+  state.bonusLines=lines;
+  await fbPush('bonus', {
+    studentId:state.studentId, name:state.name,
+    word:state.bonusWord, lines,
+    time: new Date().toLocaleTimeString('ko-KR')
+  });
+  showFinal();
+};
+
+async function showFinal(){
+  const score=state.totalCorrect*10+(state.bonusLines.length>0?5:0);
+  const total=ROOMS.reduce((s,r)=>s+r.questions.length,0);
+
+  await fbPush('students', {
+    studentId:state.studentId, name:state.name,
+    score, correct:state.totalCorrect,
+    time: new Date().toLocaleTimeString('ko-KR')
+  });
+
+  let icon,title,sub,bright;
+  if(state.totalCorrect>=12){
+    icon='🌟'; title='완전 탈출 성공!'; bright=true;
+    sub='편견 없는 밝은 세상으로 탈출했어요! 당신은 장애인식 마스터입니다!';
+    document.getElementById('finalTitle').style.color='#d97706';
+    document.getElementById('finalScoreBig').style.color='#b45309';
+  } else if(state.totalCorrect>=8){
+    icon='🌤'; title='아슬아슬 탈출!'; bright=true;
+    sub='햇빛이 조금씩 보이기 시작해요. 아직 편견의 그림자가 남아있지만, 곧 완전히 탈출할 수 있어요!';
+    document.getElementById('finalTitle').style.color='#d97706';
+    document.getElementById('finalScoreBig').style.color='#b45309';
+  } else {
+    icon='🔒'; title='편견의 방에 갇혀버렸습니다…'; bright=false;
+    sub='올바른 인식으로 다시 도전해보세요. 편견은 배움으로 깰 수 있어요.';
+    document.getElementById('finalTitle').style.color='#a78bfa';
+    document.getElementById('finalScoreBig').style.color='#7c3aed';
+  }
+  setTheme(bright);
+  document.getElementById('finalIcon').textContent=icon;
+  document.getElementById('finalTitle').textContent=title;
+  document.getElementById('finalScoreBig').textContent=score+'점';
+  document.getElementById('finalSub').textContent=`총 ${state.totalCorrect}/${total}개 정답 · ${sub}`;
+
+  // 리더보드: Firebase에서 전체 가져와서 정렬
+  const raw = await fbGet('students');
+  const all = raw ? Object.values(raw) : [];
+  all.sort((a,b)=>b.score-a.score);
+  const top3 = all.slice(0,3);
+  const medals=['🥇','🥈','🥉'];
+  const lb=document.getElementById('lbContent');
+  lb.innerHTML = top3.length===0
+    ? '<div class="lb-empty">아직 기록이 없어요</div>'
+    : top3.map((e,i)=>`<div class="lb-row"><span class="lb-rank">${medals[i]}</span><span class="lb-name">${e.name}(${e.studentId})</span><span class="lb-score">${e.score}점</span></div>`).join('');
+  showScreen('finalScreen');
+}
+
+window.restartGame = function(){
+  document.getElementById('inputId').value='';
+  document.getElementById('inputName').value='';
+  setTheme(false); showScreen('titleScreen');
+};
+
+// ── Teacher panel ──────────────────────────────────────
+window.openTeacher = function(){ document.getElementById('teacherModal').classList.add('open'); };
+window.closeTeacher = function(){
+  document.getElementById('teacherModal').classList.remove('open');
+  document.getElementById('tpPwInput').value='';
+  document.getElementById('tpPwError').textContent='';
+  document.getElementById('teacherAuthArea').style.display='block';
+  document.getElementById('teacherDataArea').style.display='none';
+};
+window.checkTeacherPw = function(){
+  if(document.getElementById('tpPwInput').value===TEACHER_PW){
+    document.getElementById('teacherAuthArea').style.display='none';
+    loadTeacherData();
+    document.getElementById('teacherDataArea').style.display='block';
+  } else document.getElementById('tpPwError').textContent='비밀번호가 틀렸습니다.';
+};
+
+async function loadTeacherData(){
+  const [sRaw, bRaw] = await Promise.all([fbGet('students'), fbGet('bonus')]);
+  const students = sRaw ? Object.values(sRaw).sort((a,b)=>b.score-a.score) : [];
+  const bonus    = bRaw ? Object.values(bRaw) : [];
+
+  const sb=document.getElementById('tpStudentBody');
+  sb.innerHTML = students.length===0
+    ? '<tr><td colspan="5" style="color:#444;text-align:center">참여자 없음</td></tr>'
+    : students.map(s=>`<tr><td>${s.studentId}</td><td>${s.name}</td><td>${s.score}점</td><td>${s.correct}개</td><td>${s.time}</td></tr>`).join('');
+
+  const bb=document.getElementById('tpBonusBody');
+  bb.innerHTML = bonus.length===0
+    ? '<tr><td colspan="5" style="color:#444;text-align:center">응모 없음</td></tr>'
+    : bonus.map(b=>`<tr><td>${b.studentId}</td><td>${b.name}</td><td>${b.word}</td><td>${b.lines[0]||''}</td><td>${b.lines[1]||''}</td></tr>`).join('');
+}
+
+window.copyStudents = async function(){
+  const raw=await fbGet('students');
+  if(!raw){alert('데이터 없음');return;}
+  const txt=Object.values(raw).sort((a,b)=>b.score-a.score).map(s=>`${s.studentId}\t${s.name}\t${s.score}점\t${s.correct}개\t${s.time}`).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>alert('복사 완료!')).catch(()=>alert('복사 실패'));
+};
+window.copyBonus = async function(){
+  const raw=await fbGet('bonus');
+  if(!raw){alert('데이터 없음');return;}
+  const txt=Object.values(raw).map(b=>`${b.studentId}\t${b.name}\t${b.word}\t${b.lines.join(' / ')}`).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>alert('복사 완료!')).catch(()=>alert('복사 실패'));
+};
+window.resetAll = async function(){
+  if(!confirm('모든 학생 데이터와 2행시를 삭제할까요? 되돌릴 수 없어요.')) return;
+  await Promise.all([fbDelete('students'), fbDelete('bonus')]);
+  alert('초기화 완료!');
+  loadTeacherData();
+};
+</script>
+</body>
+</html>

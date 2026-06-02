@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>교사 대시보드 · 편견의 방을 탈출하라</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',sans-serif;background:#060610;color:#c0b8d8;min-height:100vh;padding:24px 16px}
+h1{font-size:20px;font-weight:700;color:#a78bfa;text-align:center;margin-bottom:4px}
+.subtitle{font-size:12px;color:#4a4268;text-align:center;margin-bottom:28px}
+.section{max-width:900px;margin:0 auto 32px}
+.section-title{font-size:13px;font-weight:700;color:#7c6faa;letter-spacing:.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #1e1a38}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:900px;margin:0 auto 32px}
+@media(max-width:600px){.cards{grid-template-columns:repeat(2,1fr)}}
+.card{background:#0a0818;border:1px solid #2e2a52;border-radius:12px;padding:18px 14px;text-align:center}
+.card-label{font-size:11px;color:#4a4268;margin-bottom:6px}
+.card-value{font-size:28px;font-weight:700;color:#a78bfa}
+.card-unit{font-size:12px;color:#665e88;margin-top:2px}
+.bar-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.bar-label{font-size:12px;color:#7c6faa;width:90px;flex-shrink:0}
+.bar-track{flex:1;background:#0e0c1e;border-radius:4px;height:22px;overflow:hidden;border:1px solid #1e1a38}
+.bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#7c3aed,#a78bfa);transition:width .6s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:8px}
+.bar-pct{font-size:11px;color:#fff;font-weight:700}
+.bar-fill.mid{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.bar-fill.low{background:linear-gradient(90deg,#ef4444,#f87171)}
+.dist-row{display:flex;gap:12px;flex-wrap:wrap}
+.dist-chip{background:#0a0818;border:1px solid #2e2a52;border-radius:8px;padding:12px 20px;text-align:center;flex:1;min-width:120px}
+.dist-icon{font-size:22px;margin-bottom:4px}
+.dist-count{font-size:24px;font-weight:700;color:#a78bfa}
+.dist-name{font-size:11px;color:#4a4268;margin-top:2px}
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{padding:8px 10px;background:#0e0c1e;color:#665e88;text-align:left;border-bottom:1px solid #1e1a38;position:sticky;top:0}
+.data-table td{padding:7px 10px;border-bottom:1px solid #0e0c1e;color:#c0b8d8}
+.data-table tr:hover td{background:#0e0c1e55}
+.data-table td.score{color:#a78bfa;font-weight:700}
+.table-wrap{max-height:360px;overflow-y:auto;border:1px solid #1e1a38;border-radius:8px}
+.empty{font-size:12px;color:#333;text-align:center;padding:24px}
+.lb-list{display:flex;flex-direction:column;gap:6px}
+.lb-item{display:flex;align-items:center;gap:12px;background:#0a0818;border:1px solid #1e1a38;border-radius:8px;padding:10px 14px;font-size:13px}
+.lb-rank{font-size:18px;min-width:32px;text-align:center}
+.lb-name{flex:1;color:#c0b8d8}
+.lb-score{color:#a78bfa;font-weight:700}
+.btn-area{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.btn-warn{padding:10px 20px;background:transparent;border:1px solid #f59e0b;border-radius:8px;color:#fbbf24;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-warn:hover{background:#f59e0b22}
+.btn-danger{padding:10px 20px;background:transparent;border:1px solid #ef4444;border-radius:8px;color:#f87171;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-danger:hover{background:#ef444422}
+.btn-reload{padding:10px 20px;background:transparent;border:1px solid #7c3aed;border-radius:8px;color:#a78bfa;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:24px}
+.btn-reload:hover{background:#7c3aed22}
+.timestamp{font-size:11px;color:#2e2a52;text-align:center;margin-top:24px}
+.sync-status{text-align:center;margin-bottom:16px;font-size:12px}
+.sync-ok{color:#22c55e}.sync-err{color:#ef4444}
+.acc-bar{display:inline-block;height:8px;border-radius:4px;vertical-align:middle;margin-right:6px}
+.acc-high{background:#22c55e}.acc-mid{background:#f59e0b}.acc-low{background:#ef4444}
+td.q-label{max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+td.q-key{color:#4a4268;font-size:11px;white-space:nowrap}
+/* pw screen */
+#pwScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+#pwScreen h2{color:#a78bfa;font-size:20px}
+#pwScreen input{padding:12px 16px;background:#0e0c1e;border:1px solid #2e2a52;border-radius:8px;color:#e0d8ff;font-size:16px;outline:none;width:220px;text-align:center}
+#pwScreen button{padding:12px 32px;background:transparent;border:1px solid #7c3aed;border-radius:8px;color:#a78bfa;font-size:15px;font-weight:700;cursor:pointer}
+#pwScreen button:hover{background:#7c3aed22}
+.pw-error{color:#ef4444;font-size:13px}
+#dashboard{display:none}
+</style>
+</head>
+<body>
+
+<!-- 비밀번호 화면 -->
+<div id="pwScreen">
+  <div style="font-size:48px">🎓</div>
+  <h2>교사 대시보드</h2>
+  <div style="font-size:13px;color:#665e88">편견의 방을 탈출하라 · 실시간 현황</div>
+  <input type="password" id="pwInput" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')checkPw()">
+  <button onclick="checkPw()">입장</button>
+  <div class="pw-error" id="pwError"></div>
+</div>
+
+<!-- 대시보드 본체 -->
+<div id="dashboard">
+  <h1>🎓 교사 대시보드</h1>
+  <p class="subtitle">편견의 방을 탈출하라 · 실시간 학생 현황</p>
+  <div class="sync-status" id="syncStatus"></div>
+  <div style="max-width:900px;margin:0 auto 20px;text-align:right">
+    <button class="btn-reload" onclick="renderAll()">🔄 새로고침</button>
+  </div>
+
+  <!-- 요약 카드 -->
+  <div class="cards">
+    <div class="card"><div class="card-label">전체 참여자</div><div class="card-value" id="cTotal">—</div><div class="card-unit">명</div></div>
+    <div class="card"><div class="card-label">평균 점수</div><div class="card-value" id="cAvgScore">—</div><div class="card-unit">점</div></div>
+    <div class="card"><div class="card-label">평균 정답수</div><div class="card-value" id="cAvgCorrect">—</div><div class="card-unit">/ 15문제</div></div>
+    <div class="card"><div class="card-label">2행시 제출</div><div class="card-value" id="cBonusCount">—</div><div class="card-unit">건</div></div>
+  </div>
+
+  <!-- 결과 분포 -->
+  <div class="section">
+    <div class="section-title">🏁 결과 분포</div>
+    <div class="dist-row" id="distRow"></div>
+  </div>
+
+  <!-- TOP 10 리더보드 -->
+  <div class="section">
+    <div class="section-title">🏆 TOP 10 리더보드</div>
+    <div class="lb-list" id="lbList"></div>
+  </div>
+
+  <!-- 전체 참여자 -->
+  <div class="section">
+    <div class="section-title">👤 전체 참여자 목록</div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>학번</th><th>이름</th><th>점수</th><th>정답수</th><th>완료시각</th></tr></thead>
+        <tbody id="studentBody"></tbody>
+      </table>
+    </div>
+    <div class="btn-area" style="margin-top:10px">
+      <button class="btn-warn" onclick="copyStudentsTSV()">📋 엑셀용 복사</button>
+    </div>
+  </div>
+
+  <!-- 2행시 응모 -->
+  <div class="section">
+    <div class="section-title">✍️ 2행시 응모 현황</div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>학번</th><th>이름</th><th>단어</th><th>1행</th><th>2행</th></tr></thead>
+        <tbody id="bonusBody"></tbody>
+      </table>
+    </div>
+    <div class="btn-area" style="margin-top:10px">
+      <button class="btn-warn" onclick="copyBonusTSV()">📋 엑셀용 복사</button>
+    </div>
+  </div>
+
+  <!-- 관리 -->
+  <div class="section">
+    <div class="section-title">⚙️ 데이터 관리</div>
+    <div class="btn-area">
+      <button class="btn-danger" onclick="doResetAll()">🗑️ 전체 데이터 초기화</button>
+    </div>
+  </div>
+
+  <div class="timestamp" id="timestamp"></div>
+</div>
+
+<script type="module">
+const FB = 'https://realtime-database-94b88-default-rtdb.asia-southeast1.firebasedatabase.app';
+const TEACHER_PW = '1209';
+const medals = ['🥇','🥈','🥉'];
+
+// ── 비밀번호 ─────────────────────────────────────────
+window.checkPw = function(){
+  if(document.getElementById('pwInput').value === TEACHER_PW){
+    document.getElementById('pwScreen').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    renderAll();
+  } else {
+    document.getElementById('pwError').textContent='비밀번호가 틀렸습니다.';
+  }
+};
+
+// ── Firebase REST ────────────────────────────────────
+async function fbGet(path){
+  try{
+    const r=await fetch(`${FB}/${path}.json`);
+    if(!r.ok) throw new Error();
+    const d=await r.json();
+    setSyncStatus(true);
+    return d;
+  }catch{ setSyncStatus(false); return null; }
+}
+async function fbDelete(path){
+  try{
+    await fetch(`${FB}/${path}.json`,{method:'DELETE'});
+    setSyncStatus(true);
+  }catch{ setSyncStatus(false); }
+}
+function setSyncStatus(ok){
+  const el=document.getElementById('syncStatus');
+  el.innerHTML = ok
+    ? '<span class="sync-ok">🔗 Firebase 연결됨</span>'
+    : '<span class="sync-err">⚠️ Firebase 연결 실패 — 인터넷을 확인하세요</span>';
+}
+
+// ── 렌더 ─────────────────────────────────────────────
+window.renderAll = async function(){
+  const [sRaw, bRaw] = await Promise.all([fbGet('students'), fbGet('bonus')]);
+  const students = sRaw ? Object.values(sRaw) : [];
+  const bonus    = bRaw ? Object.values(bRaw) : [];
+
+  students.sort((a,b)=>b.score-a.score);
+
+  const n = students.length;
+  const avgScore   = n ? Math.round(students.reduce((s,x)=>s+x.score,0)/n) : 0;
+  const avgCorrect = n ? (students.reduce((s,x)=>s+x.correct,0)/n).toFixed(1) : 0;
+
+  document.getElementById('cTotal').textContent      = n;
+  document.getElementById('cAvgScore').textContent   = n ? avgScore : '—';
+  document.getElementById('cAvgCorrect').textContent = n ? avgCorrect : '—';
+  document.getElementById('cBonusCount').textContent = bonus.length;
+
+  // 결과 분포
+  const full    = students.filter(s=>s.correct>=12).length;
+  const partial = students.filter(s=>s.correct>=8&&s.correct<12).length;
+  const fail    = students.filter(s=>s.correct<8).length;
+  const safe    = n||1;
+  document.getElementById('distRow').innerHTML=`
+    <div class="dist-chip"><div class="dist-icon">🌟</div><div class="dist-count">${full}</div><div class="dist-name">완전 탈출<br>(${Math.round(full/safe*100)}%)</div></div>
+    <div class="dist-chip"><div class="dist-icon">🌤</div><div class="dist-count">${partial}</div><div class="dist-name">아슬아슬<br>(${Math.round(partial/safe*100)}%)</div></div>
+    <div class="dist-chip"><div class="dist-icon">🔒</div><div class="dist-count">${fail}</div><div class="dist-name">실패<br>(${Math.round(fail/safe*100)}%)</div></div>`;
+
+  // TOP 10 리더보드
+  const top10=students.slice(0,10);
+  document.getElementById('lbList').innerHTML = top10.length===0
+    ? '<div class="empty">아직 기록이 없어요</div>'
+    : top10.map((e,i)=>`<div class="lb-item">
+        <span class="lb-rank">${i<3?medals[i]:(i+1)+'위'}</span>
+        <span class="lb-name">${e.name}(${e.studentId})</span>
+        <span class="lb-score">${e.score}점 · ${e.correct}개</span>
+      </div>`).join('');
+
+  // 참여자 표
+  document.getElementById('studentBody').innerHTML = students.length===0
+    ? '<tr><td colspan="6" class="empty">참여자 없음</td></tr>'
+    : students.map((s,i)=>`<tr>
+        <td>${i+1}</td><td>${s.studentId}</td><td>${s.name}</td>
+        <td class="score">${s.score}점</td><td>${s.correct}개</td><td>${s.time}</td>
+      </tr>`).join('');
+
+  // 2행시 표
+  document.getElementById('bonusBody').innerHTML = bonus.length===0
+    ? '<tr><td colspan="6" class="empty">응모 없음</td></tr>'
+    : bonus.map((b,i)=>`<tr>
+        <td>${i+1}</td><td>${b.studentId}</td><td>${b.name}</td><td>${b.word}</td>
+        <td>${b.lines[0]||''}</td><td>${b.lines[1]||''}</td>
+      </tr>`).join('');
+
+  document.getElementById('timestamp').textContent=`마지막 갱신: ${new Date().toLocaleString('ko-KR')}`;
+};
+
+// ── 복사 ─────────────────────────────────────────────
+window.copyStudentsTSV = async function(){
+  const raw=await fbGet('students');
+  if(!raw){alert('데이터가 없습니다.');return;}
+  const rows=Object.values(raw).sort((a,b)=>b.score-a.score);
+  const txt='학번\t이름\t점수\t정답수\t완료시각\n'+rows.map(s=>`${s.studentId}\t${s.name}\t${s.score}점\t${s.correct}개\t${s.time}`).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>alert('복사 완료! 엑셀에 붙여넣기 하세요.')).catch(()=>alert('복사 실패'));
+};
+window.copyBonusTSV = async function(){
+  const raw=await fbGet('bonus');
+  if(!raw){alert('데이터가 없습니다.');return;}
+  const txt='학번\t이름\t단어\t1행\t2행\n'+Object.values(raw).map(b=>`${b.studentId}\t${b.name}\t${b.word}\t${b.lines[0]||''}\t${b.lines[1]||''}`).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>alert('복사 완료!')).catch(()=>alert('복사 실패'));
+};
+
+// ── 초기화 ───────────────────────────────────────────
+window.doResetAll = async function(){
+  if(!confirm('⚠️ 모든 데이터를 삭제할까요?\n참여자, 리더보드, 2행시가 모두 삭제됩니다.')) return;
+  if(!confirm('정말로 전체 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
+  await Promise.all([fbDelete('students'), fbDelete('bonus')]);
+  await renderAll();
+  alert('전체 초기화 완료');
+};
+</script>
+</body>
+</html>
