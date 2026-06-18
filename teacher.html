@@ -101,6 +101,17 @@ td.q-key{color:#4a4268;font-size:11px;white-space:nowrap}
     <div class="dist-row" id="distRow"></div>
   </div>
 
+  <!-- 문항별 정답률 -->
+  <div class="section">
+    <div class="section-title">📝 문항별 정답률 <span style="font-weight:400;color:#4a4268;font-size:11px">(오답 많은 순 · 총 15문항)</span></div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>번호</th><th>카테고리</th><th>유형</th><th>문제</th><th>정답률</th><th>정답/응시</th></tr></thead>
+        <tbody id="questionBody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- TOP 10 리더보드 -->
   <div class="section">
     <div class="section-title">🏆 TOP 10 리더보드</div>
@@ -204,13 +215,40 @@ window.renderAll = async function(){
 
   // 결과 분포
   const full    = students.filter(s=>s.correct>=12).length;
-  const partial = students.filter(s=>s.correct>=8&&s.correct<12).length;
-  const fail    = students.filter(s=>s.correct<8).length;
+  const partial = students.filter(s=>s.correct>=9&&s.correct<12).length;
+  const fail    = students.filter(s=>s.correct<9).length;
   const safe    = n||1;
   document.getElementById('distRow').innerHTML=`
     <div class="dist-chip"><div class="dist-icon">🌟</div><div class="dist-count">${full}</div><div class="dist-name">완전 탈출<br>(${Math.round(full/safe*100)}%)</div></div>
     <div class="dist-chip"><div class="dist-icon">🌤</div><div class="dist-count">${partial}</div><div class="dist-name">아슬아슬<br>(${Math.round(partial/safe*100)}%)</div></div>
     <div class="dist-chip"><div class="dist-icon">🔒</div><div class="dist-count">${fail}</div><div class="dist-name">실패<br>(${Math.round(fail/safe*100)}%)</div></div>`;
+
+  // 문항별 정답률 (오답 많은 순)
+  const qMap = {};
+  students.forEach(s=>{
+    (s.questionResults||[]).forEach(q=>{
+      if(!qMap[q.key]) qMap[q.key]={key:q.key,label:q.label,cat:q.cat,type:q.type,correct:0,total:0};
+      qMap[q.key].total++;
+      if(q.correct) qMap[q.key].correct++;
+    });
+  });
+  const qStats = Object.values(qMap).map(q=>({...q,accuracy:q.total?Math.round(q.correct/q.total*100):0}));
+  qStats.sort((a,b)=>a.accuracy-b.accuracy || a.key.localeCompare(b.key));
+  document.getElementById('questionBody').innerHTML = qStats.length===0
+    ? '<tr><td colspan="6" class="empty">데이터 없음 — 학생이 퀴즈를 완료하면 표시됩니다</td></tr>'
+    : qStats.map(q=>{
+        const cls = q.accuracy>=70?'acc-high':q.accuracy>=40?'acc-mid':'acc-low';
+        const barW = Math.max(q.accuracy,4);
+        const color = q.accuracy>=70?'#22c55e':q.accuracy>=40?'#f59e0b':'#ef4444';
+        return `<tr>
+          <td class="q-key">${q.key}</td>
+          <td><span style="font-size:11px;color:#7c6faa">${q.cat}</span></td>
+          <td style="font-size:11px;color:#665e88">${q.type==='short'?'주관식':'객관식'}</td>
+          <td class="q-label" title="${q.label}">${q.label}</td>
+          <td style="white-space:nowrap"><span class="acc-bar ${cls}" style="width:${barW}px"></span><span style="color:${color};font-weight:700">${q.accuracy}%</span></td>
+          <td style="color:#665e88">${q.correct}/${q.total}</td>
+        </tr>`;
+      }).join('');
 
   // TOP 10 리더보드
   const top10=students.slice(0,10);
