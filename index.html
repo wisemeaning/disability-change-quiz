@@ -158,7 +158,7 @@ body.bright .question-text{color:#3a2e1a}
   <div class="title-main">편견의 방을 탈출하라!</div>
   <div class="title-sub2">점동고 장애이해교육 - 방탈출 퀴즈</div>
   <div class="title-notice">🎁 모든 방을 탈출하면 참여 상품을 드려요!<br>보너스 미션까지 완료하면 추첨을 통해 추가 상품도 드려요 (7월 중 지급)</div>
-  <div class="title-sub">장애인식개선교육 방탈출 퀴즈 · 3개의 방 + 보너스 미션</div>
+  <div class="title-sub">장애이해교육 방탈출 퀴즈 · 3개의 방 + 보너스 미션</div>
   <div class="input-group"><label>학번</label><input id="inputId" type="text" placeholder="학번을 입력하세요"></div>
   <div class="input-group"><label>이름</label><input id="inputName" type="text" placeholder="이름을 입력하세요"></div>
   <button class="btn-start" onclick="startGame()">🚪 탈출 시작</button>
@@ -214,6 +214,7 @@ body.bright .question-text{color:#3a2e1a}
   <div class="bonus-title">보너스 미션!</div>
   <div class="bonus-desc">추가 상품을 위한 특별 미션이에요</div>
   <div class="bonus-desc">아래 단어로 <strong>2행시</strong>를 지어보세요!</div>
+  <div class="bonus-desc">우수작을 추첨해서 추가 상품을 드립니다 :)</div>
   <div class="bonus-word" id="bonusWordDisplay"></div>
   <div class="bonus-input-area" id="bonusInputArea"></div>
   <div class="ban-msg" id="banMsg">⛔ 부적절한 표현이 포함되어 있어요. 다시 작성해주세요!</div>
@@ -312,7 +313,7 @@ const ROOMS = [
     {type:'short', text:'장애가 있는 사람의 입장에서 생각하고 감정을 이해하려는 태도를 무엇이라고 할까요?',
      answers:['공감'], feedback:'정답은 "공감"입니다. 공감은 동정과 달리, 상대방의 상황과 감정을 그 사람의 입장에서 이해하려는 적극적인 태도를 말합니다.'}
    ]},
-  {emoji:'⛓', name:'3번 방 · 함께의 방', cat:'통합교육',
+  {emoji:'⛓', name:'3번 방 · 함께하는 방', cat:'통합교육',
    desc:'장애 학생과 비장애 학생이 함께 배우는 통합교육에 관한 방이에요.',
    hint:'마지막 사슬을 끊어내세요. 함께라는 열쇠가 모든 문을 엽니다.', password:'통합교육',
    questions:[
@@ -362,7 +363,7 @@ function setSyncOk(){ const b=document.getElementById('syncBadge'); b.textConten
 function setSyncErr(){ const b=document.getElementById('syncBadge'); b.textContent='⚠ 오프라인'; b.className='sync-badge err'; }
 
 // ── State ──────────────────────────────────────────────
-let state = {studentId:'',name:'',roomIdx:0,qIdx:0,correctCount:0,totalCorrect:0,timerInterval:null,timerLeft:30,bonusWord:'',bonusLines:[],finished:false};
+let state = {studentId:'',name:'',roomIdx:0,qIdx:0,correctCount:0,totalCorrect:0,timerInterval:null,timerLeft:30,bonusWord:'',bonusLines:[],questionResults:[],finished:false};
 
 // ── Helpers ────────────────────────────────────────────
 function hasBadWord(t){ const s=t.toLowerCase().replace(/\s/g,''); return BAD_WORDS.some(w=>s.includes(w.toLowerCase())); }
@@ -378,7 +379,7 @@ window.startGame = function(){
   const sid=document.getElementById('inputId').value.trim();
   const sname=document.getElementById('inputName').value.trim();
   if(!sid||!sname){alert('학번과 이름을 모두 입력해주세요.');return;}
-  state={studentId:sid,name:sname,roomIdx:0,qIdx:0,correctCount:0,totalCorrect:0,timerInterval:null,timerLeft:30,bonusWord:'',bonusLines:[],finished:false};
+  state={studentId:sid,name:sname,roomIdx:0,qIdx:0,correctCount:0,totalCorrect:0,timerInterval:null,timerLeft:30,bonusWord:'',bonusLines:[],questionResults:[],finished:false};
   setTheme(false); showRoomIntro();
 };
 
@@ -432,7 +433,9 @@ function updateTimerUI(){
 }
 function timeOut(){
   disableOptions();
-  showFeedback(false,'⏰ 시간 초과! '+ROOMS[state.roomIdx].questions[state.qIdx].feedback);
+  const q=ROOMS[state.roomIdx].questions[state.qIdx];
+  state.questionResults.push({key:`R${state.roomIdx+1}Q${state.qIdx+1}`,label:q.text,cat:ROOMS[state.roomIdx].cat,type:q.type,correct:false});
+  showFeedback(false,'⏰ 시간 초과! '+q.feedback);
   document.getElementById('btnNext').style.display='block';
 }
 function selectOption(idx){
@@ -444,6 +447,7 @@ function selectOption(idx){
   btns[idx].classList.add(correct?'correct':'wrong');
   if(!correct) btns[q.answer].classList.add('correct');
   if(correct) state.correctCount++;
+  state.questionResults.push({key:`R${state.roomIdx+1}Q${state.qIdx+1}`,label:q.text,cat:ROOMS[state.roomIdx].cat,type:q.type,correct});
   showFeedback(correct,(correct?'✅ 정답! ':'❌ 오답! ')+q.feedback);
   document.getElementById('btnNext').style.display='block';
 }
@@ -453,6 +457,7 @@ window.submitShort = function(){
   const val=document.getElementById('shortInput').value.trim();
   const correct=q.answers.some(a=>val===a||val.replace(/\s/g,'')===a.replace(/\s/g,''));
   if(correct) state.correctCount++;
+  state.questionResults.push({key:`R${state.roomIdx+1}Q${state.qIdx+1}`,label:q.text,cat:ROOMS[state.roomIdx].cat,type:q.type,correct});
   document.getElementById('shortInput').disabled=true;
   document.querySelector('.btn-submit').disabled=true;
   showFeedback(correct,(correct?'✅ 정답! ':`❌ 오답! 정답은 "${q.answers[0]}"입니다. `)+q.feedback);
@@ -527,6 +532,7 @@ async function showFinal(){
   await fbPush('students', {
     studentId:state.studentId, name:state.name,
     score, correct:state.totalCorrect,
+    questionResults: state.questionResults,
     time: new Date().toLocaleTimeString('ko-KR')
   });
 
@@ -536,7 +542,7 @@ async function showFinal(){
     sub='편견 없는 밝은 세상으로 탈출했어요! 당신은 장애인식 마스터입니다!';
     document.getElementById('finalTitle').style.color='#d97706';
     document.getElementById('finalScoreBig').style.color='#b45309';
-  } else if(state.totalCorrect>=8){
+  } else if(state.totalCorrect>=9){
     icon='🌤'; title='아슬아슬 탈출!'; bright=true;
     sub='햇빛이 조금씩 보이기 시작해요. 아직 편견의 그림자가 남아있지만, 곧 완전히 탈출할 수 있어요!';
     document.getElementById('finalTitle').style.color='#d97706';
